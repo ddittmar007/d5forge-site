@@ -190,13 +190,13 @@ function Navbar() {
               lineHeight: 1,
             }}
           >
-            by D5 Ventures
+            by D5
           </span>
         </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
-        {["Features", "For vCFOs", "For Businesses"].map((item) => (
+        {["Features", "How It Works", "Why Forge"].map((item) => (
           <a
             key={item}
             href={`#${item.toLowerCase().replace(/\s/g, "-")}`}
@@ -391,9 +391,9 @@ function Hero() {
             fontWeight: 300,
           }}
         >
-          D5 Forge transforms raw financial data into boardroom-ready insights.
-          AI-powered analysis, automated deliverables, and the trusted guidance
-          of a virtual CFO — all in one platform.
+          Forge is your AI-powered virtual CFO. Boardroom-ready financial
+          packages, plain-language analysis, and strategic guidance — without
+          the six-figure salary.
         </p>
 
         <div
@@ -460,7 +460,7 @@ function Hero() {
 
 function Stats() {
   const stats = [
-    { value: 40, suffix: "+", label: "Hours saved per month", sub: "per vCFO practice" },
+    { value: 40, suffix: "+", label: "Hours saved per month", sub: "on financial reporting" },
     { value: 10, suffix: "x", label: "Faster reporting", sub: "vs. manual assembly" },
     { value: 100, suffix: "%", label: "Data security", sub: "SOC 2 roadmap" },
   ];
@@ -517,32 +517,32 @@ function Features() {
     {
       icon: "📊",
       title: "Automated Financial Packages",
-      desc: "P&L, balance sheet, cash flow statements, and KPI scorecards — assembled automatically from your connected data sources. Review, annotate, deliver.",
+      desc: "P&L, balance sheet, cash flow statements, and KPI scorecards — assembled automatically from your accounting data. Board-ready every month.",
     },
     {
       icon: "🤖",
       title: "AI-Powered Flux Analysis",
-      desc: "Variances flagged and explained automatically. D5 Forge identifies the story behind the numbers so you can focus on the strategic narrative.",
+      desc: "Variances flagged and explained in plain language. Forge identifies what changed, why it matters, and what to do about it.",
     },
     {
       icon: "🔗",
-      title: "Universal Connectors",
-      desc: "QuickBooks, Xero, NetSuite — connect once per client. Financial data flows in, polished deliverables flow out through Teams, Slack, or email.",
+      title: "Connects to Your Accounting Software",
+      desc: "QuickBooks, Xero, NetSuite — connect once. Your financial data flows in securely, polished reports and dashboards flow out.",
     },
     {
       icon: "🏗️",
-      title: "Industry Recipes",
-      desc: "Construction WIP schedules, SaaS burn metrics, healthcare payer mix — industry-specific KPIs that load automatically based on each client's vertical.",
+      title: "Industry-Specific Intelligence",
+      desc: "Construction WIP schedules, SaaS burn metrics, healthcare payer mix — KPIs tailored to your industry, not generic templates.",
     },
     {
       icon: "🔒",
-      title: "Multi-Tenant Trust Layer",
-      desc: "Every CFO sees only their clients. Every client's data is isolated, encrypted, and audit-logged. Built for the sensitivity financial data demands.",
+      title: "Bank-Grade Security",
+      desc: "Your data is isolated, encrypted, and audit-logged. Built for the sensitivity financial data demands.",
     },
     {
       icon: "📬",
-      title: "One-Click Delivery",
-      desc: "Configure once per client: Teams channel, Slack DM, email to the board, shared Drive folder. Hit publish and every stakeholder gets their package.",
+      title: "Delivered Where You Work",
+      desc: "Board packages sent to Teams, Slack, email, or a shared Drive folder. Your stakeholders get the right reports in the right place.",
     },
   ];
 
@@ -572,10 +572,10 @@ function Features() {
             marginBottom: 16,
           }}
         >
-          Everything a vCFO Practice Needs
+          Everything Your Business Needs From a CFO
         </h2>
         <p style={{ fontSize: 17, color: COLORS.textDim, maxWidth: 560, margin: "0 auto", fontWeight: 300 }}>
-          From raw data to boardroom-ready deliverables — automated, branded, and delivered on schedule.
+          CFO-grade financial intelligence — automated, clear, and delivered on schedule.
         </p>
       </div>
 
@@ -849,170 +849,94 @@ function DashboardPreview() {
   );
 }
 
-function AudienceSection() {
+function WhyForge() {
   return (
-    <Section id="for-vcfos" style={{ padding: "100px 48px", maxWidth: 1200, margin: "0 auto" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
-        {/* vCFOs */}
-        <div
+    <Section id="why-forge" style={{ padding: "100px 48px", maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ textAlign: "center", marginBottom: 72 }}>
+        <span
           style={{
-            background: COLORS.bgCard,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 16,
-            padding: "48px 40px",
-            position: "relative",
-            overflow: "hidden",
+            fontSize: 12,
+            fontWeight: 600,
+            color: COLORS.accent,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            display: "block",
+            marginBottom: 16,
           }}
         >
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 3,
-              background: `linear-gradient(90deg, ${COLORS.accent}, transparent)`,
-            }}
-          />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: COLORS.accent,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              display: "block",
-              marginBottom: 20,
-            }}
-          >
-            For Virtual CFOs
-          </span>
-          <h3
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 32,
-              fontWeight: 600,
-              color: COLORS.white,
-              lineHeight: 1.2,
-              marginBottom: 20,
-            }}
-          >
-            Scale Your Practice Without Scaling Your Hours
-          </h3>
-          <p style={{ fontSize: 15, color: COLORS.textDim, lineHeight: 1.7, marginBottom: 28, fontWeight: 300 }}>
-            D5 Forge handles the assembly so you can focus on advisory. Serve more
-            clients at a higher standard with automated financial packages, industry-specific
-            templates, and one-click delivery to every stakeholder.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {[
-              "Multi-client dashboard — every client in one view",
-              "Automated monthly packages from connected data",
-              "Industry recipe library with pre-built KPI sets",
-              "Your branding, your commentary, your value-add",
-            ].map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 6,
-                    background: COLORS.accentDim,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    marginTop: 1,
-                  }}
-                >
-                  <span style={{ color: COLORS.accent, fontSize: 12 }}>✓</span>
-                </div>
-                <span style={{ fontSize: 14, color: COLORS.text, lineHeight: 1.5 }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+          Why Forge
+        </span>
+        <h2
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "clamp(32px, 4vw, 48px)",
+            fontWeight: 600,
+            color: COLORS.white,
+            lineHeight: 1.15,
+            marginBottom: 16,
+          }}
+        >
+          CFO-Grade Insight Without the Full-Time Cost
+        </h2>
+        <p style={{ fontSize: 17, color: COLORS.textDim, maxWidth: 600, margin: "0 auto", fontWeight: 300, lineHeight: 1.65 }}>
+          Most businesses don't need a full-time CFO. But every business deserves
+          to understand their numbers, spot problems early, and make confident
+          financial decisions. That's Forge.
+        </p>
+      </div>
 
-        {/* Business Owners */}
-        <div
-          id="for-businesses"
-          style={{
-            background: COLORS.bgCard,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 16,
-            padding: "48px 40px",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        {[
+          {
+            icon: "💰",
+            title: "A fraction of the cost",
+            desc: "A full-time CFO runs $150K–$300K a year. Forge gives you the same caliber of financial reporting and analysis at a fraction of the price.",
+          },
+          {
+            icon: "📈",
+            title: "Always-on financial clarity",
+            desc: "No more waiting until month-end to know where you stand. Interactive dashboards and real-time cash flow views, available anytime.",
+          },
+          {
+            icon: "🎯",
+            title: "Plain language, not jargon",
+            desc: "Variance explanations you can actually understand. Forge tells you what changed, why it matters, and what to consider next.",
+          },
+          {
+            icon: "🤝",
+            title: "Board-ready from day one",
+            desc: "Polished financial packages that impress your board, your investors, and your bank — delivered automatically every month.",
+          },
+        ].map((item, i) => (
           <div
+            key={i}
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 3,
-              background: `linear-gradient(90deg, ${COLORS.green}, transparent)`,
+              background: COLORS.bgCard,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 14,
+              padding: "32px 28px",
+              transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
-          />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: COLORS.green,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              display: "block",
-              marginBottom: 20,
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = COLORS.bgCardHover;
+              e.currentTarget.style.borderColor = COLORS.borderLight;
+              e.currentTarget.style.transform = "translateY(-4px)";
             }}
-          >
-            For Business Owners
-          </span>
-          <h3
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 32,
-              fontWeight: 600,
-              color: COLORS.white,
-              lineHeight: 1.2,
-              marginBottom: 20,
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = COLORS.bgCard;
+              e.currentTarget.style.borderColor = COLORS.border;
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            CFO-Grade Insight Without the Full-Time Cost
-          </h3>
-          <p style={{ fontSize: 15, color: COLORS.textDim, lineHeight: 1.7, marginBottom: 28, fontWeight: 300 }}>
-            Get the financial clarity your board and investors expect. D5 Forge delivers
-            interactive dashboards, plain-language analysis, and strategic guidance — powered
-            by AI, guided by an experienced vCFO.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {[
-              "Interactive board packages — click, don't squint",
-              "Plain-language variance explanations",
-              "Cash flow forecasts updated in real time",
-              "Delivered where you work — Teams, Slack, email",
-            ].map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 6,
-                    background: COLORS.greenDim,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    marginTop: 1,
-                  }}
-                >
-                  <span style={{ color: COLORS.green, fontSize: 12 }}>✓</span>
-                </div>
-                <span style={{ fontSize: 14, color: COLORS.text, lineHeight: 1.5 }}>{item}</span>
-              </div>
-            ))}
+            <div style={{ fontSize: 28, marginBottom: 16 }}>{item.icon}</div>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: COLORS.white, marginBottom: 10 }}>
+              {item.title}
+            </h3>
+            <p style={{ fontSize: 14, color: COLORS.textDim, lineHeight: 1.65, fontWeight: 300 }}>
+              {item.desc}
+            </p>
           </div>
-        </div>
+        ))}
       </div>
     </Section>
   );
@@ -1023,27 +947,27 @@ function HowItWorks() {
     {
       num: "01",
       title: "Connect",
-      desc: "Link your clients' QuickBooks, Xero, or NetSuite accounts. D5 Forge securely syncs financial data through encrypted, audit-logged connections.",
+      desc: "Link your QuickBooks, Xero, or NetSuite account. Forge securely syncs your financial data through encrypted, audit-logged connections.",
     },
     {
       num: "02",
       title: "Configure",
-      desc: "Select an industry recipe, customize your KPI scorecard, and set delivery preferences for each client. One-time setup, ongoing value.",
+      desc: "Tell us your industry and what matters most to your business. Forge loads the right KPIs, benchmarks, and report formats automatically.",
     },
     {
       num: "03",
-      title: "Review & Annotate",
-      desc: "D5 Forge assembles the financial package automatically. You add the strategic commentary and judgment calls that make you indispensable.",
+      title: "Review",
+      desc: "Every month, Forge assembles your full financial package — P&L, balance sheet, cash flow, variance analysis — with plain-language explanations.",
     },
     {
       num: "04",
-      title: "Deliver",
-      desc: "One click. Every stakeholder gets the right package through their preferred channel — Teams, Slack, email, or a branded dashboard link.",
+      title: "Decide with Confidence",
+      desc: "Share polished board packages with stakeholders instantly. Know exactly where your business stands and where it's heading.",
     },
   ];
 
   return (
-    <Section style={{ padding: "100px 48px", maxWidth: 1000, margin: "0 auto" }}>
+    <Section id="how-it-works" style={{ padding: "100px 48px", maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: 72 }}>
         <span
           style={{
@@ -1130,21 +1054,42 @@ function HowItWorks() {
 }
 
 function WaitlistForm() {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
+  const [form, setForm] = useState({ email: "", name: "", company: "", phone: "", system: "" });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  const inputStyle = {
+    background: COLORS.bgCard,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: 10,
+    padding: "16px 20px",
+    fontSize: 16,
+    color: COLORS.white,
+    outline: "none",
+    transition: "border-color 0.2s",
+    fontFamily: "'Outfit', sans-serif",
+    width: "100%",
+  };
+
   const handleSubmit = async () => {
-    if (!email || !role) return;
+    if (!form.email) return;
     setSubmitting(true);
     setError("");
     try {
       const res = await fetch("https://formspree.io/f/xvzwgdqo", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ email, role, _subject: "New Forge Waitlist Signup" }),
+        body: JSON.stringify({
+          email: form.email,
+          name: form.name || "(not provided)",
+          company: form.company || "(not provided)",
+          phone: form.phone || "(not provided)",
+          financial_system: form.system || "(not provided)",
+          _subject: "New Forge Waitlist Signup",
+        }),
       });
       if (res.ok) {
         setSubmitted(true);
@@ -1186,7 +1131,7 @@ function WaitlistForm() {
           Be First to the Forge
         </h2>
         <p style={{ fontSize: 17, color: COLORS.textDim, marginBottom: 48, fontWeight: 300 }}>
-          We're onboarding a limited group of vCFOs and forward-thinking businesses for early access.
+          We're onboarding a limited group of businesses for early access.
           Join the waitlist and we'll be in touch.
         </p>
 
@@ -1194,60 +1139,83 @@ function WaitlistForm() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <input
               type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{
-                background: COLORS.bgCard,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: 10,
-                padding: "16px 20px",
-                fontSize: 16,
-                color: COLORS.white,
-                outline: "none",
-                transition: "border-color 0.2s",
-                fontFamily: "'Outfit', sans-serif",
-              }}
+              placeholder="Email address *"
+              value={form.email}
+              onChange={update("email")}
+              style={inputStyle}
               onFocus={(e) => (e.target.style.borderColor = COLORS.accent)}
               onBlur={(e) => (e.target.style.borderColor = COLORS.border)}
             />
 
-            <div style={{ display: "flex", gap: 10 }}>
-              {["I'm a vCFO / Fractional CFO", "I'm a Business Owner"].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRole(r)}
-                  style={{
-                    flex: 1,
-                    background: role === r ? COLORS.accentDim : COLORS.bgCard,
-                    border: `1px solid ${role === r ? COLORS.accent + "55" : COLORS.border}`,
-                    borderRadius: 10,
-                    padding: "14px 16px",
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: role === r ? COLORS.accent : COLORS.textDim,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    fontFamily: "'Outfit', sans-serif",
-                  }}
-                >
-                  {r}
-                </button>
-              ))}
+            <div style={{ display: "flex", gap: 14 }}>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={form.name}
+                onChange={update("name")}
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = COLORS.accent)}
+                onBlur={(e) => (e.target.style.borderColor = COLORS.border)}
+              />
+              <input
+                type="tel"
+                placeholder="Phone number"
+                value={form.phone}
+                onChange={update("phone")}
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = COLORS.accent)}
+                onBlur={(e) => (e.target.style.borderColor = COLORS.border)}
+              />
             </div>
+
+            <input
+              type="text"
+              placeholder="Business name"
+              value={form.company}
+              onChange={update("company")}
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = COLORS.accent)}
+              onBlur={(e) => (e.target.style.borderColor = COLORS.border)}
+            />
+
+            <select
+              value={form.system}
+              onChange={update("system")}
+              style={{
+                ...inputStyle,
+                color: form.system ? COLORS.white : COLORS.textMuted,
+                appearance: "none",
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235c5e6a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 20px center",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = COLORS.accent)}
+              onBlur={(e) => (e.target.style.borderColor = COLORS.border)}
+            >
+              <option value="" style={{ background: COLORS.bgCard, color: COLORS.textMuted }}>Primary financial system</option>
+              <option value="QuickBooks Online" style={{ background: COLORS.bgCard, color: COLORS.white }}>QuickBooks Online</option>
+              <option value="QuickBooks Desktop" style={{ background: COLORS.bgCard, color: COLORS.white }}>QuickBooks Desktop</option>
+              <option value="Xero" style={{ background: COLORS.bgCard, color: COLORS.white }}>Xero</option>
+              <option value="NetSuite" style={{ background: COLORS.bgCard, color: COLORS.white }}>NetSuite</option>
+              <option value="FreshBooks" style={{ background: COLORS.bgCard, color: COLORS.white }}>FreshBooks</option>
+              <option value="Sage" style={{ background: COLORS.bgCard, color: COLORS.white }}>Sage</option>
+              <option value="Wave" style={{ background: COLORS.bgCard, color: COLORS.white }}>Wave</option>
+              <option value="Other" style={{ background: COLORS.bgCard, color: COLORS.white }}>Other</option>
+              <option value="Not sure" style={{ background: COLORS.bgCard, color: COLORS.white }}>Not sure</option>
+            </select>
 
             <button
               onClick={handleSubmit}
-              disabled={!email || !role || submitting}
+              disabled={!form.email || submitting}
               style={{
-                background: email && role ? COLORS.accent : COLORS.bgCard,
-                color: email && role ? COLORS.bg : COLORS.textMuted,
-                border: `1px solid ${email && role ? COLORS.accent : COLORS.border}`,
+                background: form.email ? COLORS.accent : COLORS.bgCard,
+                color: form.email ? COLORS.bg : COLORS.textMuted,
+                border: `1px solid ${form.email ? COLORS.accent : COLORS.border}`,
                 borderRadius: 10,
                 padding: "16px",
                 fontSize: 16,
                 fontWeight: 600,
-                cursor: email && role && !submitting ? "pointer" : "default",
+                cursor: form.email && !submitting ? "pointer" : "default",
                 transition: "all 0.3s",
                 letterSpacing: "0.01em",
                 fontFamily: "'Outfit', sans-serif",
@@ -1304,7 +1272,7 @@ function Footer() {
             Forge
           </span>
           <span style={{ fontSize: 8, fontWeight: 500, color: COLORS.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", lineHeight: 1 }}>
-            by D5 Ventures
+            by D5
           </span>
         </div>
       </div>
@@ -1325,7 +1293,7 @@ export default function App() {
       <Stats />
       <Features />
       <DashboardPreview />
-      <AudienceSection />
+      <WhyForge />
       <HowItWorks />
       <WaitlistForm />
       <Footer />
