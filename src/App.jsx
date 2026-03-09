@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import HeliosDashboard from "./HeliosDashboard";
 
 const GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
 
@@ -1284,7 +1286,7 @@ function Footer() {
   );
 }
 
-export default function App() {
+function LandingPage() {
   return (
     <div style={{ minHeight: "100vh", background: COLORS.bg }}>
       <style>{styles.global}</style>
@@ -1298,5 +1300,17 @@ export default function App() {
       <WaitlistForm />
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/helios" element={<HeliosDashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
