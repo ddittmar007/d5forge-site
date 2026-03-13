@@ -1,4 +1,4 @@
-import { SignIn } from "@clerk/clerk-react";
+import { SignUp } from "@clerk/clerk-react";
 
 const COLORS = {
   bg: "#000000",
@@ -6,7 +6,7 @@ const COLORS = {
   textMuted: "#5c5e6a",
 };
 
-export default function LoginPage() {
+export default function SignUpPage() {
   return (
     <div
       style={{
@@ -22,19 +22,19 @@ export default function LoginPage() {
       <div style={{ marginBottom: 32, textAlign: "center" }}>
         <svg width={56} height={56} viewBox="0 0 64 64" fill="none">
           <defs>
-            <linearGradient id="loginCrucGrad" x1="32" y1="4" x2="32" y2="60">
+            <linearGradient id="signupCrucGrad" x1="32" y1="4" x2="32" y2="60">
               <stop offset="0%" stopColor="#e8c84a" />
               <stop offset="50%" stopColor="#c9a227" />
               <stop offset="100%" stopColor="#b87333" />
             </linearGradient>
-            <linearGradient id="loginMoltenGrad" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="signupMoltenGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#e85d26" />
               <stop offset="100%" stopColor="#c9a227" />
             </linearGradient>
           </defs>
-          <path d="M32 4 L56 28 L32 60 L8 28 Z" fill="none" stroke="url(#loginCrucGrad)" strokeWidth="3" />
-          <path d="M32 18 L44 28 L32 46 L20 28 Z" fill="url(#loginMoltenGrad)" opacity="0.25" />
-          <path d="M14 28 L50 28" stroke="url(#loginCrucGrad)" strokeWidth="2" opacity="0.6" />
+          <path d="M32 4 L56 28 L32 60 L8 28 Z" fill="none" stroke="url(#signupCrucGrad)" strokeWidth="3" />
+          <path d="M32 18 L44 28 L32 46 L20 28 Z" fill="url(#signupMoltenGrad)" opacity="0.25" />
+          <path d="M14 28 L50 28" stroke="url(#signupCrucGrad)" strokeWidth="2" opacity="0.6" />
           <path d="M28 14 L28 8" stroke="#e8c84a" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
           <path d="M36 14 L36 10" stroke="#e8c84a" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
           <path d="M32 16 L32 6" stroke="#e85d26" strokeWidth="1.2" strokeLinecap="round" opacity="0.3" />
@@ -58,14 +58,14 @@ export default function LoginPage() {
             marginTop: 4,
           }}
         >
-          Client Portal
+          Create your account
         </div>
       </div>
 
-      <SignIn
+      <SignUp
         routing="path"
-        path="/login"
-        signUpUrl="/signup"
+        path="/signup"
+        signInUrl="/login"
         appearance={{
           variables: {
             colorPrimary: COLORS.accent,

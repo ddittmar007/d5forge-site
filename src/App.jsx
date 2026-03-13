@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import HeliosDashboard from "./HeliosDashboard";
 import LoginPage from "./LoginPage";
+import SignUpPage from "./SignUpPage";
 import DashboardPortal from "./DashboardPortal";
 
 const GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
@@ -1330,6 +1331,10 @@ export default function App() {
         <Route
           path="/login/*"
           element={<LoginPage />}
+        />
+        <Route
+          path="/signup/*"
+          element={<SignUpPage />}
         />
         <Route
           path="/dashboard/*"
