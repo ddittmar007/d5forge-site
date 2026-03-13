@@ -66,6 +66,7 @@ export default function SignUpPage() {
         routing="path"
         path="/signup"
         signInUrl="/login"
+        forceRedirectUrl="/dashboard"
         appearance={{
           variables: {
             colorPrimary: COLORS.accent,

@@ -236,6 +236,21 @@ function Navbar() {
           Client Portal
         </a>
         <a
+          href="/login"
+          style={{
+            color: COLORS.accent,
+            textDecoration: "none",
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: "0.02em",
+            transition: "opacity 0.2s",
+          }}
+          onMouseEnter={(e) => (e.target.style.opacity = "0.8")}
+          onMouseLeave={(e) => (e.target.style.opacity = "1")}
+        >
+          Login
+        </a>
+        <a
           href="#waitlist"
           style={{
             background: COLORS.accent,
