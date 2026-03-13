@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import HeliosDashboard from "./HeliosDashboard";
+import LoginPage from "./LoginPage";
+import DashboardPortal from "./DashboardPortal";
 
-const GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
+const GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
 
 // Inject fonts
 if (!document.querySelector(`link[href="${GOOGLE_FONTS}"]`)) {
@@ -216,6 +219,21 @@ function Navbar() {
             {item}
           </a>
         ))}
+        <a
+          href="/dashboard"
+          style={{
+            color: COLORS.textDim,
+            textDecoration: "none",
+            fontSize: 14,
+            fontWeight: 400,
+            letterSpacing: "0.02em",
+            transition: "color 0.2s",
+          }}
+          onMouseEnter={(e) => (e.target.style.color = COLORS.accent)}
+          onMouseLeave={(e) => (e.target.style.color = COLORS.textDim)}
+        >
+          Client Portal
+        </a>
         <a
           href="#waitlist"
           style={{
@@ -1309,6 +1327,23 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/helios" element={<HeliosDashboard />} />
+        <Route
+          path="/login/*"
+          element={<LoginPage />}
+        />
+        <Route
+          path="/dashboard/*"
+          element={
+            <>
+              <SignedIn>
+                <DashboardPortal />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn redirectUrl="/dashboard" />
+              </SignedOut>
+            </>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
