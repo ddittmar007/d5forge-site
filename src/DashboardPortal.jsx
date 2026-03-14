@@ -104,7 +104,7 @@ function ClientCard({ client }) {
       )}
 
       <Link
-        to={`/dashboard/${client.id}`}
+        to={`/dashboard/${client.clientId}`}
         style={{
           marginTop: "auto",
           display: "inline-flex",
@@ -352,7 +352,7 @@ function ClientListView() {
             }}
           >
             {clients.map((client) => (
-              <ClientCard key={client.id} client={client} />
+              <ClientCard key={client.clientId} client={client} />
             ))}
           </div>
         )}
