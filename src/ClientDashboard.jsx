@@ -5,6 +5,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { ChatToggleButton, ChatPanel, ChatStyles } from "./ChatPanel";
 
 const COLORS = {
   bg: "#000000",
@@ -291,8 +292,17 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatHasBeenOpened, setChatHasBeenOpened] = useState(false);
 
   const isAdmin = user?.publicMetadata?.role === "platform_admin";
+
+  const toggleChat = () => {
+    setChatOpen(prev => {
+      if (!prev) setChatHasBeenOpened(true);
+      return !prev;
+    });
+  };
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
@@ -525,6 +535,10 @@ export default function ClientDashboard() {
       </main>
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
+      <ChatStyles />
+      <ChatToggleButton onClick={toggleChat} isOpen={chatOpen} hasBeenOpened={chatHasBeenOpened} />
+      <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} clientId={clientId} />
     </div>
   );
 }
