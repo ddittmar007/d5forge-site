@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { UserButton, useUser, useAuth } from "@clerk/clerk-react";
-import { Link } from "react-router-dom";
+import { Link, Routes, Route } from "react-router-dom";
+import ClientDashboard from "./ClientDashboard";
 
 const COLORS = {
   bg: "#0a0b0d",
@@ -166,7 +167,7 @@ function EmptyState() {
   );
 }
 
-export default function DashboardPortal() {
+function ClientListView() {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [clients, setClients] = useState([]);
@@ -357,5 +358,14 @@ export default function DashboardPortal() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function DashboardPortal() {
+  return (
+    <Routes>
+      <Route index element={<ClientListView />} />
+      <Route path=":clientId" element={<ClientDashboard />} />
+    </Routes>
   );
 }

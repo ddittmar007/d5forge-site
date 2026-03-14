@@ -6,7 +6,7 @@ import LoginPage from "./LoginPage";
 import SignUpPage from "./SignUpPage";
 import DashboardPortal from "./DashboardPortal";
 
-const GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
+const GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
 
 // Inject fonts
 if (!document.querySelector(`link[href="${GOOGLE_FONTS}"]`)) {
