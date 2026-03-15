@@ -73,11 +73,8 @@ function pctStr(current, prior) {
   return `${parseFloat(pct) >= 0 ? "+" : ""}${pct}%`;
 }
 
-// Spread an annual total across 12 months with ±10% seasonal variation
-function spreadMonthly(annual) {
-  const base = annual / 12;
-  return MONTHS.map(() => Math.round(base * (0.9 + Math.random() * 0.2)));
-}
+// Deterministic seasonal multipliers for synthetic monthly spread
+const SEASONAL = [0.85, 0.88, 0.95, 1.0, 1.05, 1.08, 1.12, 1.1, 1.05, 1.0, 0.95, 0.92];
 
 async function apiFetch(token, path) {
   const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -220,8 +217,10 @@ function YearSelector({ year, setYear, compareYear, setCompareYear, compareActiv
 function buildMonthlyFromPnl(pnl) {
   if (!pnl) return null;
 
-  // Extract revenue line items from PNL
-  const revenueItems = pnl.revenue?.lineItems || pnl.revenue?.items || [];
+  // API returns revenue as a flat array, not { lineItems: [...] }
+  const revenueItems = Array.isArray(pnl.revenue) ? pnl.revenue : (pnl.revenue?.lineItems || pnl.revenue?.items || []);
+
+  // Build product display names and colors from annual totals
   const productTotals = {};
   const productColors = {};
   const FALLBACK_COLORS = [C.accent, C.amber, C.gray, C.grayMuted, C.blue, C.green];
@@ -229,7 +228,6 @@ function buildMonthlyFromPnl(pnl) {
 
   for (const item of revenueItems) {
     const rawName = item.accountName || item.name || "";
-    // Try mapped name first, fall back to raw account name
     const mapped = PRODUCT_LINE_MAP[rawName] || rawName;
     if (mapped) {
       productTotals[mapped] = item.amount ?? item.total ?? 0;
@@ -237,23 +235,41 @@ function buildMonthlyFromPnl(pnl) {
     }
   }
 
-  // COGS & net income
-  const totalRevenue = pnl.revenue?.total ?? pnl.totalRevenue ?? 0;
-  const totalCogs = pnl.costOfGoodsSold?.total ?? pnl.cogs?.total ?? 0;
-  const grossProfit = totalRevenue - totalCogs;
-  const netIncome = pnl.netIncome ?? pnl.net_income ?? (grossProfit - (pnl.operatingExpenses?.total ?? 0));
+  const totalRevenue = pnl.totalRevenue ?? 0;
+  const totalCogs = pnl.totalCOGS ?? 0;
+  const grossProfit = pnl.grossProfit ?? (totalRevenue - totalCogs);
+  const netIncome = pnl.netIncome ?? 0;
 
-  // Spread across months with variation
-  const months = MONTHS.map((m, i) => {
-    const vary = 0.85 + Math.random() * 0.3; // ±15%
-    const row = { month: m };
-    for (const [prod, total] of Object.entries(productTotals)) {
-      row[prod] = Math.round((total / 12) * vary);
-    }
-    row.grossProfit = Math.round((grossProfit / 12) * vary);
-    row.netIncome = Math.round((netIncome / 12) * vary);
-    return row;
-  });
+  // Use real monthlyBreakdown from API if available
+  const breakdown = pnl.monthlyBreakdown;
+  let months;
+
+  if (Array.isArray(breakdown) && breakdown.length > 0) {
+    months = breakdown.map((mb) => {
+      const row = { month: MONTHS[(mb.month ?? 1) - 1] || MONTHS[0] };
+      const mbRevItems = Array.isArray(mb.revenue) ? mb.revenue : [];
+      for (const item of mbRevItems) {
+        const rawName = item.accountName || item.name || "";
+        const mapped = PRODUCT_LINE_MAP[rawName] || rawName;
+        if (mapped) row[mapped] = Math.round(item.amount ?? item.total ?? 0);
+      }
+      row.grossProfit = Math.round(mb.grossProfit ?? 0);
+      row.netIncome = Math.round(mb.netIncome ?? 0);
+      return row;
+    });
+  } else {
+    // Fallback: spread annual totals with deterministic seasonal variation
+    months = MONTHS.map((m, i) => {
+      const factor = SEASONAL[i];
+      const row = { month: m };
+      for (const [prod, total] of Object.entries(productTotals)) {
+        row[prod] = Math.round((total / 12) * factor);
+      }
+      row.grossProfit = Math.round((grossProfit / 12) * factor);
+      row.netIncome = Math.round((netIncome / 12) * factor);
+      return row;
+    });
+  }
 
   return { months, productTotals, productColors, totalRevenue, grossProfit, netIncome };
 }
