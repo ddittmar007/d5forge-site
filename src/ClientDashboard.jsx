@@ -427,9 +427,11 @@ export default function ClientDashboard() {
     try {
       const token = await getToken();
       const data = await apiFetch(token, path);
+      console.log(`[Dashboard] ${path} response:`, JSON.stringify(data, null, 2));
       setter({ data, loading: false, error: false });
       return data;
-    } catch {
+    } catch (err) {
+      console.error(`[Dashboard] ${path} FAILED:`, err.message);
       setter(prev => ({ ...prev, loading: false, error: true }));
       return null;
     }
@@ -441,6 +443,7 @@ export default function ClientDashboard() {
 
     // Get client name from basic dashboard endpoint
     fetchWidget(`/api/clients/${clientId}/dashboard`, (s) => {
+      console.log('[Dashboard] clientName check — clientName:', s.data?.clientName, 'client?.name:', s.data?.client?.name);
       if (s.data) setClientName(s.data.clientName || s.data.client?.name || "Dashboard");
     });
 
@@ -456,6 +459,16 @@ export default function ClientDashboard() {
 
   // Accessors
   const s = summary.data;
+  if (s) {
+    console.log('[Dashboard] Summary data keys:', Object.keys(s));
+    console.log('[Dashboard] Summary check — cashPosition:', s.cashPosition, 'cash_position:', s.cash_position);
+    console.log('[Dashboard] Summary check — revenue:', s.revenue, 'totalRevenue:', s.totalRevenue);
+    console.log('[Dashboard] Summary check — netIncome:', s.netIncome, 'net_income:', s.net_income);
+    console.log('[Dashboard] Summary check — grossMargin:', s.grossMargin, 'gross_margin:', s.gross_margin);
+    console.log('[Dashboard] Summary check — accountsReceivable:', s.accountsReceivable, 'ar_total:', s.ar_total);
+    console.log('[Dashboard] Summary check — accountsPayable:', s.accountsPayable, 'ap_total:', s.ap_total);
+    console.log('[Dashboard] Summary check — priorYear keys:', s.revenuePriorYear, s.prior_revenue, s.netIncomePriorYear, s.prior_netIncome);
+  }
   const priorPct = (field) => {
     if (!s) return null;
     const val = pctChange(s[field], s[`${field}PriorYear`] ?? s[`prior_${field}`]);
@@ -522,6 +535,7 @@ export default function ClientDashboard() {
         {/* ── ROW 2: Revenue & Profitability ────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
           <WidgetCard title="Revenue by Product Line" tooltip="Monthly revenue broken down by product category" loading={revenue.loading} error={revenue.error}>
+            {revenue.data && console.log('[Dashboard] Revenue chart check — data keys:', Object.keys(revenue.data), 'monthly:', !!revenue.data.monthly, 'isArray:', Array.isArray(revenue.data), 'sample:', JSON.stringify((revenue.data.monthly || revenue.data)?.[0]))}
             {revenue.data && (
               <>
                 <ResponsiveContainer width="100%" height={280}>
@@ -541,6 +555,7 @@ export default function ClientDashboard() {
           </WidgetCard>
 
           <WidgetCard title="Profitability Trend" tooltip="Monthly gross profit and net income with prior year comparison" loading={profitability.loading} error={profitability.error}>
+            {profitability.data && console.log('[Dashboard] Profitability chart check — data keys:', Object.keys(profitability.data), 'monthly:', !!profitability.data.monthly, 'sample:', JSON.stringify((profitability.data.monthly || profitability.data)?.[0]))}
             {profitability.data && (
               <>
                 <ResponsiveContainer width="100%" height={280}>
@@ -567,10 +582,12 @@ export default function ClientDashboard() {
         {/* ── ROW 3: Balance Sheet & Cash Flow ──────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
           <WidgetCard title="Visual Balance Sheet" tooltip="Proportional view of assets vs liabilities and equity" loading={balanceSheet.loading} error={balanceSheet.error}>
+            {balanceSheet.data && console.log('[Dashboard] BalanceSheet check — data keys:', Object.keys(balanceSheet.data), 'assets:', balanceSheet.data.assets, 'liabilities:', balanceSheet.data.liabilities, 'equity:', balanceSheet.data.equity)}
             {balanceSheet.data && <BalanceSheetVisual data={balanceSheet.data} />}
           </WidgetCard>
 
           <WidgetCard title="Cash Flow Waterfall" tooltip="Where cash came from and went during the period" loading={cashFlow.loading} error={cashFlow.error}>
+            {cashFlow.data && console.log('[Dashboard] CashFlow check — data keys:', Object.keys(cashFlow.data), 'startingCash:', cashFlow.data.startingCash, 'starting_cash:', cashFlow.data.starting_cash, 'operatingActivities:', cashFlow.data.operatingActivities, 'operating:', cashFlow.data.operating)}
             {cashFlow.data && <CashFlowWaterfall data={cashFlow.data} />}
           </WidgetCard>
         </div>
@@ -578,6 +595,7 @@ export default function ClientDashboard() {
         {/* ── ROW 4: AR & AP Aging ──────────────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
           <WidgetCard title="AR Aging Breakdown" tooltip="Accounts receivable by aging bucket with top customers" loading={arAging.loading} error={arAging.error}>
+            {arAging.data && console.log('[Dashboard] AR Aging check — data keys:', Object.keys(arAging.data), 'totals:', arAging.data.totals, 'summary:', arAging.data.summary, 'customers:', arAging.data.customers, 'details:', arAging.data.details, 'rows:', arAging.data.rows)}
             {arAging.data && (
               <>
                 <AgingBar data={arAging.data.totals || arAging.data.summary || arAging.data} />
@@ -587,6 +605,7 @@ export default function ClientDashboard() {
           </WidgetCard>
 
           <WidgetCard title="AP Aging Breakdown" tooltip="Accounts payable by aging bucket with top vendors" loading={apAging.loading} error={apAging.error}>
+            {apAging.data && console.log('[Dashboard] AP Aging check — data keys:', Object.keys(apAging.data), 'totals:', apAging.data.totals, 'summary:', apAging.data.summary, 'vendors:', apAging.data.vendors, 'details:', apAging.data.details, 'rows:', apAging.data.rows)}
             {apAging.data && (
               <>
                 <AgingBar data={apAging.data.totals || apAging.data.summary || apAging.data} />
@@ -599,7 +618,9 @@ export default function ClientDashboard() {
         {/* ── ROW 5: Multi-Year Growth Timeline ─────────────────────────── */}
         <WidgetCard title="Company Growth Timeline" tooltip="Annual revenue and net income from 2009 to present with key milestones" loading={trends.loading} error={trends.error}>
           {trends.data && (() => {
+            console.log('[Dashboard] Trends check — data keys:', Object.keys(trends.data), 'years:', !!trends.data.years, 'annual:', !!trends.data.annual, 'isArray:', Array.isArray(trends.data), 'sample:', JSON.stringify((trends.data.years || trends.data.annual || trends.data)?.[0]));
             const trendData = trends.data.years || trends.data.annual || trends.data;
+            console.log('[Dashboard] Trends trendData isArray:', Array.isArray(trendData), 'length:', trendData?.length);
             if (!Array.isArray(trendData)) return <WidgetError />;
             return (
               <>
