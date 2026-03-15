@@ -150,43 +150,99 @@ export function ChatPanel({ isOpen, onClose, clientId }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
+      let toolActive = false;
+      let sseBuffer = "";
+
+      const updateMsg = (content, isTool) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[assistantIdx] = {
+            role: "assistant",
+            content,
+            isStreaming: true,
+            isToolCall: isTool,
+          };
+          return updated;
+        });
+      };
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        // Buffer chunks — SSE events can split across reads
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split("\n");
+        // Keep the last (potentially incomplete) line in the buffer
+        sseBuffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content
-                ?? parsed.delta?.text
-                ?? parsed.content
-                ?? parsed.text
-                ?? (typeof parsed === "string" ? parsed : "");
-              if (content) {
-                accumulated += content;
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[assistantIdx] = { role: "assistant", content: accumulated, isStreaming: true };
-                  return updated;
-                });
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") continue;
+
+          // Skip raw non-JSON lines that look like tool/MCP noise
+          if (!data.startsWith("{")) continue;
+
+          let parsed;
+          try { parsed = JSON.parse(data); } catch { continue; }
+
+          const eventType = parsed.type;
+
+          // ── Anthropic streaming API events ──
+
+          // content_block_start: detect tool-use blocks to enter tool mode
+          if (eventType === "content_block_start") {
+            const blockType = parsed.content_block?.type;
+            if (blockType === "tool_use" || blockType === "mcp_tool_use" || blockType === "mcp_tool_result") {
+              toolActive = true;
+              updateMsg(accumulated || "Pulling your financial data...", true);
+            }
+            continue;
+          }
+
+          // content_block_delta: only accept text_delta, skip input_json_delta
+          if (eventType === "content_block_delta") {
+            const deltaType = parsed.delta?.type;
+            if (deltaType === "text_delta") {
+              const txt = parsed.delta.text || "";
+              if (txt) {
+                accumulated += txt;
+                toolActive = false;
+                updateMsg(accumulated, false);
               }
-            } catch {
-              // Non-JSON SSE line — treat as plain text content
-              if (data.trim()) {
-                accumulated += data;
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[assistantIdx] = { role: "assistant", content: accumulated, isStreaming: true };
-                  return updated;
-                });
-              }
+            }
+            // Skip input_json_delta and anything else
+            continue;
+          }
+
+          // content_block_stop: if ending a tool block, stay in tool mode until text arrives
+          if (eventType === "content_block_stop") {
+            continue;
+          }
+
+          // message_start / message_delta / message_stop: metadata, skip
+          if (eventType === "message_start" || eventType === "message_delta" || eventType === "message_stop") {
+            continue;
+          }
+
+          // ── OpenAI-style streaming (choices[].delta.content) ──
+          const oaiContent = parsed.choices?.[0]?.delta?.content;
+          if (typeof oaiContent === "string" && oaiContent) {
+            accumulated += oaiContent;
+            toolActive = false;
+            updateMsg(accumulated, false);
+            continue;
+          }
+
+          // ── Simple text fields (custom backend wrappers) ──
+          const simpleText = parsed.delta?.text ?? parsed.text;
+          if (typeof simpleText === "string" && simpleText) {
+            // Guard: skip if it looks like JSON/MCP noise
+            if (!simpleText.includes('"mcp_tool_use"') && !simpleText.includes('"mcp_tool_result"') && !simpleText.includes('"content_block')) {
+              accumulated += simpleText;
+              toolActive = false;
+              updateMsg(accumulated, false);
             }
           }
         }
@@ -305,7 +361,12 @@ export function ChatPanel({ isOpen, onClose, clientId }) {
           >
             {msg.role === "assistant" ? (
               <div style={{ overflow: "hidden" }}>
-                <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+                {msg.content && <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>}
+                {msg.isToolCall && msg.isStreaming && (
+                  <p style={{ margin: "4px 0 0", fontSize: 12, color: COLORS.textDim, fontStyle: "italic" }}>
+                    Pulling your financial data...
+                  </p>
+                )}
               </div>
             ) : (
               <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
@@ -326,7 +387,7 @@ export function ChatPanel({ isOpen, onClose, clientId }) {
           </div>
         ))}
 
-        {streaming && messages[messages.length - 1]?.content === "" && (
+        {streaming && messages[messages.length - 1]?.content === "" && !messages[messages.length - 1]?.isToolCall && (
           <div style={{
             alignSelf: "flex-start", maxWidth: "88%",
             background: COLORS.bgAssistant, border: `1px solid ${COLORS.border}`,
