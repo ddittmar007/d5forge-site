@@ -223,9 +223,18 @@ function buildMonthlyFromPnl(pnl) {
   // Extract revenue line items from PNL
   const revenueItems = pnl.revenue?.lineItems || pnl.revenue?.items || [];
   const productTotals = {};
+  const productColors = {};
+  const FALLBACK_COLORS = [C.accent, C.amber, C.gray, C.grayMuted, C.blue, C.green];
+  let colorIdx = 0;
+
   for (const item of revenueItems) {
-    const mapped = PRODUCT_LINE_MAP[item.accountName] || PRODUCT_LINE_MAP[item.name];
-    if (mapped) productTotals[mapped] = item.amount ?? item.total ?? 0;
+    const rawName = item.accountName || item.name || "";
+    // Try mapped name first, fall back to raw account name
+    const mapped = PRODUCT_LINE_MAP[rawName] || rawName;
+    if (mapped) {
+      productTotals[mapped] = item.amount ?? item.total ?? 0;
+      productColors[mapped] = PRODUCT_COLORS[mapped] || FALLBACK_COLORS[colorIdx++ % FALLBACK_COLORS.length];
+    }
   }
 
   // COGS & net income
@@ -246,7 +255,7 @@ function buildMonthlyFromPnl(pnl) {
     return row;
   });
 
-  return { months, productTotals, totalRevenue, grossProfit, netIncome };
+  return { months, productTotals, productColors, totalRevenue, grossProfit, netIncome };
 }
 
 // ─── Balance Sheet visual ───────────────────────────────────────────────────
@@ -414,17 +423,19 @@ function AgingTable({ rows, type }) {
         </thead>
         <tbody>
           {top10.map((r, i) => {
-            const over90 = r.over90 ?? r.days90 ?? 0;
+            const a = r.aging || r;
+            const over90 = a.over90 ?? a.days90 ?? 0;
             const has90 = over90 > 0;
+            const name = r.customerName || r.vendorName || r.name || r.customer || r.vendor || "—";
             return (
               <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
-                <td style={{ padding: "6px 8px", color: has90 ? C.red : C.text }}>{r.name || r.customer || r.vendor}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.current ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.days1_30 ?? r.days30 ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.amber }}>{fmt(r.days31_60 ?? r.days60 ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.days61_90 ?? 0)}</td>
+                <td style={{ padding: "6px 8px", color: has90 ? C.red : C.text }}>{name}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(a.current ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(a.days1_30 ?? a.days30 ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.amber }}>{fmt(a.days31_60 ?? a.days60 ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(a.days61_90 ?? 0)}</td>
                 <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: has90 ? C.red : C.text }}>{fmt(over90)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, fontWeight: 600, color: C.text }}>{fmt(r.total ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, fontWeight: 600, color: C.text }}>{fmt(a.total ?? 0)}</td>
               </tr>
             );
           })}
@@ -610,12 +621,12 @@ export default function ClientDashboard() {
                     <XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FU }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FM }} axisLine={false} tickLine={false} tickFormatter={fmt} width={56} />
                     <Tooltip content={<CustomTooltip />} />
-                    {Object.keys(PRODUCT_COLORS).map(key => (
-                      <Bar key={key} dataKey={key} stackId="rev" fill={PRODUCT_COLORS[key]} name={key} />
+                    {Object.keys(monthly.productColors).map(key => (
+                      <Bar key={key} dataKey={key} stackId="rev" fill={monthly.productColors[key]} name={key} />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
-                <ChartLegend items={Object.entries(PRODUCT_COLORS).map(([label, color]) => ({ label, color }))} />
+                <ChartLegend items={Object.entries(monthly.productColors).map(([label, color]) => ({ label, color }))} />
               </>
             )}
           </WidgetCard>
