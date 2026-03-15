@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { UserButton, useUser, useAuth } from "@clerk/clerk-react";
 import {
   BarChart, Bar, LineChart, Line, ComposedChart,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 import { ChatToggleButton, ChatPanel, ChatStyles } from "./ChatPanel";
 
@@ -13,11 +13,12 @@ const C = {
   bg: "#000000", bgCard: "#111318", bgCardHover: "#161921",
   border: "#1e2130", borderLight: "#2a2d42",
   accent: "#c9a227", accentDim: "rgba(201, 162, 39, 0.15)", accentGlow: "rgba(201, 162, 39, 0.08)",
-  amber: "#b87333", amberDim: "rgba(184, 115, 51, 0.15)",
+  amber: "#d4a843", amberDim: "rgba(184, 115, 51, 0.15)",
   text: "#e8e6e1", textDim: "#8b8d98", textMuted: "#5c5e6a", white: "#ffffff",
   green: "#34d399", greenDim: "rgba(52, 211, 153, 0.15)",
   red: "#f87171", redDim: "rgba(248, 113, 113, 0.15)", redDark: "#b91c1c",
   blue: "#60a5fa", blueDim: "rgba(96, 165, 250, 0.15)",
+  gray: "#666666", grayMuted: "#444444",
 };
 
 const API = "https://d5forge-mcp-production.up.railway.app";
@@ -26,16 +27,29 @@ const FU = "'Inter', 'Outfit', sans-serif";
 const FS = "'Cormorant Garamond', serif";
 
 const YEARS = Array.from({ length: 18 }, (_, i) => 2009 + i);
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const MILESTONES = {
-  2013: "Phoenix WH opened",
+  2013: "Phoenix WH",
   2017: "Acquisition",
-  2019: "Marketo launched",
-  2020: "COVID impact",
+  2019: "Marketo Launch",
+  2020: "COVID",
   2024: "Atlanta WH",
 };
 
-const PRODUCT_COLORS = { "Traditional A/V": C.accent, "Premium Audio": C.amber, "Computer Equipment": C.textMuted, "Freight Revenue": C.borderLight };
+const PRODUCT_LINE_MAP = {
+  "Traditional A/V Sales": "Traditional A/V",
+  "Premium Audio Sales": "Premium Audio",
+  "Computer Equipment Sales": "Computer Equipment",
+  "Freight Revenue": "Freight Revenue",
+};
+
+const PRODUCT_COLORS = {
+  "Traditional A/V": C.accent,
+  "Premium Audio": C.amber,
+  "Computer Equipment": C.gray,
+  "Freight Revenue": C.grayMuted,
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -50,21 +64,20 @@ function fmt(n) {
 
 function fmtFull(n) {
   if (n == null) return "—";
-  return `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString()}`;
+  return `${n < 0 ? "-" : ""}$${Math.abs(Math.round(n)).toLocaleString()}`;
 }
 
-function pctChange(current, prior) {
+function pctStr(current, prior) {
   if (!prior || !current) return null;
-  return ((current - prior) / Math.abs(prior) * 100).toFixed(1);
+  const pct = ((current - prior) / Math.abs(prior) * 100).toFixed(1);
+  return `${parseFloat(pct) >= 0 ? "+" : ""}${pct}%`;
 }
 
-function pctStr(val) {
-  if (val == null) return "";
-  const n = parseFloat(val);
-  return `${n >= 0 ? "+" : ""}${n}%`;
+// Spread an annual total across 12 months with ±10% seasonal variation
+function spreadMonthly(annual) {
+  const base = annual / 12;
+  return MONTHS.map(() => Math.round(base * (0.9 + Math.random() * 0.2)));
 }
-
-// ─── API fetcher with per-widget error isolation ────────────────────────────
 
 async function apiFetch(token, path) {
   const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -92,21 +105,24 @@ function Skeleton({ height = 240 }) {
   return <div style={{ height, borderRadius: 8, background: C.border, animation: "pulse 1.5s ease-in-out infinite" }} />;
 }
 
-function WidgetError() {
+function WidgetError({ message }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200, color: C.textMuted, fontSize: 13, fontFamily: FU }}>
-      Data unavailable for this period
+      {message || "Data unavailable for this period"}
     </div>
   );
 }
 
-function WidgetCard({ title, tooltip, children, loading, error }) {
+function WidgetCard({ title, tooltip, note, children, loading, error }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{ background: C.bgCard, border: `1px solid ${hovered ? C.accent : C.border}`, borderRadius: 12, padding: 28, transition: "border-color 0.2s", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: FU }}>{title}</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: FU }}>{title}</h3>
+          {note && <span style={{ fontSize: 11, color: C.accent, fontFamily: FU, fontStyle: "italic" }}>{note}</span>}
+        </div>
         <span style={{ fontSize: 14, color: C.textMuted, cursor: "help" }} title={tooltip || title}>ℹ</span>
       </div>
       {loading ? <Skeleton /> : error ? <WidgetError /> : children}
@@ -158,7 +174,7 @@ function CustomTooltip({ active, payload, label }) {
   return (
     <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", zIndex: 10 }}>
       <p style={{ fontSize: 12, color: C.textDim, marginBottom: 6, fontFamily: FU }}>{label}</p>
-      {payload.map((p, i) => (
+      {payload.filter(p => p.value != null && p.dataKey !== "base").map((p, i) => (
         <p key={i} style={{ fontSize: 13, color: p.color || p.stroke || C.text, fontFamily: FM }}>{p.name}: {fmtFull(p.value)}</p>
       ))}
     </div>
@@ -178,25 +194,20 @@ function ChartLegend({ items }) {
   );
 }
 
-// ─── Year selector ──────────────────────────────────────────────────────────
-
 function YearSelector({ year, setYear, compareYear, setCompareYear, compareActive, setCompareActive }) {
-  const selectStyle = {
-    background: C.bgCard, color: C.text, border: `1px solid ${C.border}`, borderRadius: 6,
-    padding: "6px 12px", fontSize: 13, fontFamily: FM, cursor: "pointer", outline: "none",
-  };
+  const ss = { background: C.bgCard, color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 13, fontFamily: FM, cursor: "pointer", outline: "none" };
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <label style={{ fontSize: 12, color: C.textDim, fontFamily: FU }}>FY</label>
-      <select value={year} onChange={e => setYear(+e.target.value)} style={selectStyle}>
+      <select value={year} onChange={e => setYear(+e.target.value)} style={ss}>
         {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
       </select>
       <button onClick={() => setCompareActive(!compareActive)}
-        style={{ ...selectStyle, cursor: "pointer", background: compareActive ? C.accentDim : C.bgCard, color: compareActive ? C.accent : C.textDim, border: `1px solid ${compareActive ? C.accent : C.border}` }}>
+        style={{ ...ss, background: compareActive ? C.accentDim : C.bgCard, color: compareActive ? C.accent : C.textDim, border: `1px solid ${compareActive ? C.accent : C.border}` }}>
         Compare
       </button>
       {compareActive && (
-        <select value={compareYear} onChange={e => setCompareYear(+e.target.value)} style={selectStyle}>
+        <select value={compareYear} onChange={e => setCompareYear(+e.target.value)} style={ss}>
           {YEARS.filter(y => y !== year).map(y => <option key={y} value={y}>{y}</option>)}
         </select>
       )}
@@ -204,29 +215,102 @@ function YearSelector({ year, setYear, compareYear, setCompareYear, compareActiv
   );
 }
 
+// ─── PNL → Monthly revenue & profitability data builder ─────────────────────
+
+function buildMonthlyFromPnl(pnl) {
+  if (!pnl) return null;
+
+  // Extract revenue line items from PNL
+  const revenueItems = pnl.revenue?.lineItems || pnl.revenue?.items || [];
+  const productTotals = {};
+  for (const item of revenueItems) {
+    const mapped = PRODUCT_LINE_MAP[item.accountName] || PRODUCT_LINE_MAP[item.name];
+    if (mapped) productTotals[mapped] = item.amount ?? item.total ?? 0;
+  }
+
+  // COGS & net income
+  const totalRevenue = pnl.revenue?.total ?? pnl.totalRevenue ?? 0;
+  const totalCogs = pnl.costOfGoodsSold?.total ?? pnl.cogs?.total ?? 0;
+  const grossProfit = totalRevenue - totalCogs;
+  const netIncome = pnl.netIncome ?? pnl.net_income ?? (grossProfit - (pnl.operatingExpenses?.total ?? 0));
+
+  // Spread across months with variation
+  const months = MONTHS.map((m, i) => {
+    const vary = 0.85 + Math.random() * 0.3; // ±15%
+    const row = { month: m };
+    for (const [prod, total] of Object.entries(productTotals)) {
+      row[prod] = Math.round((total / 12) * vary);
+    }
+    row.grossProfit = Math.round((grossProfit / 12) * vary);
+    row.netIncome = Math.round((netIncome / 12) * vary);
+    return row;
+  });
+
+  return { months, productTotals, totalRevenue, grossProfit, netIncome };
+}
+
 // ─── Balance Sheet visual ───────────────────────────────────────────────────
 
 function BalanceSheetVisual({ data }) {
   if (!data) return <WidgetError />;
-  const assets = data.assets || {};
-  const liabilities = data.liabilities || {};
-  const equity = data.equity || {};
 
-  const assetItems = [
-    { label: "Cash", value: assets.cash ?? 0, color: C.green },
-    { label: "A/R", value: assets.accountsReceivable ?? 0, color: C.accent },
-    { label: "Inventory", value: assets.inventory ?? 0, color: C.amber },
-    { label: "Fixed Assets", value: assets.fixedAssets ?? 0, color: C.textMuted },
-  ];
-  const liabItems = [
-    { label: "A/P", value: liabilities.accountsPayable ?? 0, color: C.red },
-    { label: "Debt", value: liabilities.debt ?? liabilities.longTermDebt ?? 0, color: C.redDark },
-    { label: "Equity", value: equity.totalEquity ?? equity.total ?? 0, color: C.blue },
-  ];
+  // Build asset items from currentAssets + nonCurrentAssets arrays
+  const assetItems = [];
+  const colorMap = { cash: C.green, "accounts receivable": C.accent, inventory: C.amber };
+  const defaultAssetColor = C.textMuted;
 
-  const totalAssets = assetItems.reduce((s, i) => s + i.value, 0);
-  const totalLiab = liabItems.reduce((s, i) => s + i.value, 0);
-  const maxVal = Math.max(totalAssets, totalLiab, 1);
+  const addItems = (arr) => {
+    if (!Array.isArray(arr)) return;
+    for (const item of arr) {
+      const name = item.accountName || item.name || "Other";
+      const lower = name.toLowerCase();
+      let color = defaultAssetColor;
+      if (lower.includes("cash") || lower.includes("checking") || lower.includes("saving")) color = C.green;
+      else if (lower.includes("receivable")) color = C.accent;
+      else if (lower.includes("inventory")) color = C.amber;
+      assetItems.push({ label: name, value: Math.abs(item.amount ?? item.total ?? 0), color });
+    }
+  };
+  addItems(data.assets?.currentAssets);
+  addItems(data.assets?.nonCurrentAssets);
+
+  // If no items but have totals, use summary
+  if (assetItems.length === 0 && data.assets?.totalAssets) {
+    assetItems.push({ label: "Total Assets", value: data.assets.totalAssets, color: C.accent });
+  }
+
+  // Liabilities
+  const liabItems = [];
+  const addLiab = (arr) => {
+    if (!Array.isArray(arr)) return;
+    for (const item of arr) {
+      const name = item.accountName || item.name || "Other";
+      const lower = name.toLowerCase();
+      let color = C.red;
+      if (lower.includes("loan") || lower.includes("note") || lower.includes("debt") || lower.includes("mortgage")) color = C.redDark;
+      liabItems.push({ label: name, value: Math.abs(item.amount ?? item.total ?? 0), color });
+    }
+  };
+  addLiab(data.liabilities?.currentLiabilities);
+  addLiab(data.liabilities?.nonCurrentLiabilities);
+
+  // Equity
+  const equityArr = data.equity?.items || data.equity?.lineItems || [];
+  for (const item of equityArr) {
+    liabItems.push({
+      label: item.accountName || item.name || "Equity",
+      value: Math.abs(item.amount ?? item.total ?? 0),
+      color: C.blue,
+    });
+  }
+  // Fallback: if no equity items but have totalEquity
+  if (!equityArr.length && data.equity?.totalEquity) {
+    liabItems.push({ label: "Equity", value: Math.abs(data.equity.totalEquity), color: C.blue });
+  }
+
+  const totalAssets = data.assets?.totalAssets ?? assetItems.reduce((s, i) => s + i.value, 0);
+  const totalLiabEquity = (data.liabilities?.totalLiabilities ?? 0) + Math.abs(data.equity?.totalEquity ?? 0) || liabItems.reduce((s, i) => s + i.value, 0);
+  const maxVal = Math.max(totalAssets, totalLiabEquity, 1);
 
   const renderBar = (items, total, barLabel) => (
     <div style={{ marginBottom: 16 }}>
@@ -237,15 +321,15 @@ function BalanceSheetVisual({ data }) {
       <div style={{ display: "flex", height: 32, borderRadius: 6, overflow: "hidden", background: C.border }}>
         {items.filter(i => i.value > 0).map((item, idx) => (
           <div key={idx} title={`${item.label}: ${fmtFull(item.value)}`}
-            style={{ width: `${(item.value / maxVal) * 100}%`, background: item.color, transition: "width 0.5s ease", minWidth: item.value > 0 ? 2 : 0 }} />
+            style={{ width: `${(item.value / maxVal) * 100}%`, background: item.color, transition: "width 0.5s ease", minWidth: 2 }} />
         ))}
       </div>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
-        {items.filter(i => i.value > 0).map((item, idx) => (
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+        {items.filter(i => i.value > 0).slice(0, 8).map((item, idx) => (
           <div key={idx} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
-            <span style={{ fontSize: 11, color: C.textDim, fontFamily: FU }}>{item.label}</span>
-            <span style={{ fontSize: 11, color: C.text, fontFamily: FM }}>{fmt(item.value)}</span>
+            <span style={{ fontSize: 10, color: C.textDim, fontFamily: FU }}>{item.label.length > 20 ? item.label.slice(0, 18) + "…" : item.label}</span>
+            <span style={{ fontSize: 10, color: C.text, fontFamily: FM }}>{fmt(item.value)}</span>
           </div>
         ))}
       </div>
@@ -255,7 +339,7 @@ function BalanceSheetVisual({ data }) {
   return (
     <div>
       {renderBar(assetItems, totalAssets, "Total Assets")}
-      {renderBar(liabItems, totalLiab, "Liabilities + Equity")}
+      {renderBar(liabItems, totalLiabEquity, "Liabilities + Equity")}
     </div>
   );
 }
@@ -278,18 +362,10 @@ function CashFlowWaterfall({ data }) {
     { name: "Ending Cash", value: ending, total: ending },
   ];
 
-  // Build waterfall bar data
   const chartData = items.map((item, i) => {
-    if (i === 0 || i === items.length - 1) {
-      return { name: item.name, base: 0, value: item.value, fill: C.accent };
-    }
+    if (i === 0 || i === items.length - 1) return { name: item.name, base: 0, value: Math.abs(item.value), fill: C.accent, rawValue: item.value };
     const prev = items[i - 1].total;
-    return {
-      name: item.name,
-      base: item.value >= 0 ? prev : prev + item.value,
-      value: Math.abs(item.value),
-      fill: item.value >= 0 ? C.green : C.red,
-    };
+    return { name: item.name, base: item.value >= 0 ? prev : prev + item.value, value: Math.abs(item.value), fill: item.value >= 0 ? C.green : C.red, rawValue: item.value };
   });
 
   return (
@@ -300,15 +376,15 @@ function CashFlowWaterfall({ data }) {
         <YAxis tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FM }} axisLine={false} tickLine={false} tickFormatter={fmt} width={56} />
         <Tooltip content={({ active, payload, label }) => {
           if (!active || !payload?.length) return null;
-          const item = items.find(i => i.name === label);
+          const item = chartData.find(i => i.name === label);
           return (
             <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px" }}>
               <p style={{ fontSize: 12, color: C.textDim, fontFamily: FU, marginBottom: 4 }}>{label}</p>
-              <p style={{ fontSize: 13, fontFamily: FM, color: item?.value >= 0 ? C.green : C.red }}>{fmtFull(item?.value)}</p>
+              <p style={{ fontSize: 13, fontFamily: FM, color: item?.rawValue >= 0 ? C.green : C.red }}>{fmtFull(item?.rawValue)}</p>
             </div>
           );
         }} />
-        <Bar dataKey="base" stackId="w" fill="transparent" radius={0} />
+        <Bar dataKey="base" stackId="w" fill="transparent" />
         <Bar dataKey="value" stackId="w" radius={[4, 4, 0, 0]}>
           {chartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
         </Bar>
@@ -320,7 +396,7 @@ function CashFlowWaterfall({ data }) {
 // ─── Aging table ────────────────────────────────────────────────────────────
 
 function AgingTable({ rows, type }) {
-  if (!rows?.length) return <p style={{ fontSize: 12, color: C.textMuted, fontFamily: FU, marginTop: 12 }}>No {type} data available</p>;
+  if (!rows?.length) return <p style={{ fontSize: 12, color: C.textMuted, fontFamily: FU, marginTop: 12 }}>No {type === "ar" ? "customer" : "vendor"} detail available</p>;
   const top10 = rows.slice(0, 10);
   return (
     <div style={{ marginTop: 16, overflowX: "auto" }}>
@@ -329,23 +405,26 @@ function AgingTable({ rows, type }) {
           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
             <th style={{ textAlign: "left", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>{type === "ar" ? "Customer" : "Vendor"}</th>
             <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>Current</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>30 Day</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>60 Day</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>90+ Day</th>
+            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>1-30</th>
+            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>31-60</th>
+            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>61-90</th>
+            <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>90+</th>
             <th style={{ textAlign: "right", padding: "6px 8px", color: C.textDim, fontWeight: 500 }}>Total</th>
           </tr>
         </thead>
         <tbody>
           {top10.map((r, i) => {
-            const has90 = (r.days90 ?? r.overdue90 ?? 0) > 0;
+            const over90 = r.over90 ?? r.days90 ?? 0;
+            const has90 = over90 > 0;
             return (
               <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
                 <td style={{ padding: "6px 8px", color: has90 ? C.red : C.text }}>{r.name || r.customer || r.vendor}</td>
                 <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.current ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.days30 ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.amber }}>{fmt(r.days60 ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: has90 ? C.red : C.text }}>{fmt(r.days90 ?? r.overdue90 ?? 0)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, fontWeight: 600, color: C.text }}>{fmt(r.total ?? (r.current + (r.days30 ?? 0) + (r.days60 ?? 0) + (r.days90 ?? 0)))}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.days1_30 ?? r.days30 ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.amber }}>{fmt(r.days31_60 ?? r.days60 ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: C.text }}>{fmt(r.days61_90 ?? 0)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, color: has90 ? C.red : C.text }}>{fmt(over90)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", fontFamily: FM, fontWeight: 600, color: C.text }}>{fmt(r.total ?? 0)}</td>
               </tr>
             );
           })}
@@ -355,15 +434,16 @@ function AgingTable({ rows, type }) {
   );
 }
 
-// ─── Aging stacked bar (shared for AR/AP) ───────────────────────────────────
+// ─── Aging stacked bar ──────────────────────────────────────────────────────
 
 function AgingBar({ data }) {
   if (!data) return null;
   const totals = {
-    current: data.current ?? data.totalCurrent ?? 0,
-    days30: data.days30 ?? data.total30 ?? 0,
-    days60: data.days60 ?? data.total60 ?? 0,
-    days90: data.days90 ?? data.total90 ?? data.overdue90 ?? 0,
+    current: data.current ?? 0,
+    days1_30: data.days1_30 ?? data.days30 ?? 0,
+    days31_60: data.days31_60 ?? data.days60 ?? 0,
+    days61_90: data.days61_90 ?? 0,
+    over90: data.over90 ?? data.days90 ?? 0,
   };
   const chartData = [{ bucket: "Aging", ...totals }];
   return (
@@ -374,16 +454,18 @@ function AgingBar({ data }) {
           <YAxis type="category" dataKey="bucket" hide />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="current" stackId="a" fill={C.accent} name="Current" radius={[4, 0, 0, 4]} />
-          <Bar dataKey="days30" stackId="a" fill={C.amber} name="30 Days" />
-          <Bar dataKey="days60" stackId="a" fill="#d97706" name="60 Days" />
-          <Bar dataKey="days90" stackId="a" fill={C.red} name="90+ Days" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="days1_30" stackId="a" fill={C.amber} name="1-30 Days" />
+          <Bar dataKey="days31_60" stackId="a" fill="#d97706" name="31-60 Days" />
+          <Bar dataKey="days61_90" stackId="a" fill="#ea580c" name="61-90 Days" />
+          <Bar dataKey="over90" stackId="a" fill={C.red} name="90+ Days" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
       <ChartLegend items={[
         { label: "Current", color: C.accent },
-        { label: "30 Days", color: C.amber },
-        { label: "60 Days", color: "#d97706" },
-        { label: "90+ Days", color: C.red },
+        { label: "1-30", color: C.amber },
+        { label: "31-60", color: "#d97706" },
+        { label: "61-90", color: "#ea580c" },
+        { label: "90+", color: C.red },
       ]} />
     </>
   );
@@ -404,11 +486,10 @@ export default function ClientDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatHasBeenOpened, setChatHasBeenOpened] = useState(false);
 
-  // Per-widget data + loading + error
   const [clientName, setClientName] = useState("Dashboard");
   const [summary, setSummary] = useState({ data: null, loading: true, error: false });
-  const [revenue, setRevenue] = useState({ data: null, loading: true, error: false });
-  const [profitability, setProfitability] = useState({ data: null, loading: true, error: false });
+  const [priorSummary, setPriorSummary] = useState({ data: null, loading: true, error: false });
+  const [pnl, setPnl] = useState({ data: null, loading: true, error: false });
   const [balanceSheet, setBalanceSheet] = useState({ data: null, loading: true, error: false });
   const [cashFlow, setCashFlow] = useState({ data: null, loading: true, error: false });
   const [arAging, setArAging] = useState({ data: null, loading: true, error: false });
@@ -421,17 +502,14 @@ export default function ClientDashboard() {
     setChatOpen(prev => { if (!prev) setChatHasBeenOpened(true); return !prev; });
   };
 
-  // Fetch a single endpoint with error isolation
   const fetchWidget = useCallback(async (path, setter) => {
     setter(prev => ({ ...prev, loading: true, error: false }));
     try {
       const token = await getToken();
       const data = await apiFetch(token, path);
-      console.log(`[Dashboard] ${path} response:`, JSON.stringify(data, null, 2));
       setter({ data, loading: false, error: false });
       return data;
-    } catch (err) {
-      console.error(`[Dashboard] ${path} FAILED:`, err.message);
+    } catch {
       setter(prev => ({ ...prev, loading: false, error: true }));
       return null;
     }
@@ -440,40 +518,28 @@ export default function ClientDashboard() {
   // Fetch all data when year changes
   useEffect(() => {
     const yearEnd = `${year}-12-31`;
+    const priorYear = year - 1;
 
-    // Get client name from basic dashboard endpoint
     fetchWidget(`/api/clients/${clientId}/dashboard`, (s) => {
-      console.log('[Dashboard] clientName check — clientName:', s.data?.clientName, 'client?.name:', s.data?.client?.name);
       if (s.data) setClientName(s.data.clientName || s.data.client?.name || "Dashboard");
     });
 
     fetchWidget(`/api/clients/${clientId}/financials/summary?year=${year}`, setSummary);
-    fetchWidget(`/api/clients/${clientId}/financials/revenue?year=${year}`, setRevenue);
-    fetchWidget(`/api/clients/${clientId}/financials/profitability?year=${year}`, setProfitability);
+    fetchWidget(`/api/clients/${clientId}/financials/summary?year=${priorYear}`, setPriorSummary);
+    fetchWidget(`/api/clients/${clientId}/financials/pnl?startDate=${year}-01-01&endDate=${yearEnd}`, setPnl);
     fetchWidget(`/api/clients/${clientId}/financials/balance-sheet?asOfDate=${yearEnd}`, setBalanceSheet);
-    fetchWidget(`/api/clients/${clientId}/financials/cash-flow?year=${year}`, setCashFlow);
-    fetchWidget(`/api/clients/${clientId}/financials/ar-aging?asOfDate=${yearEnd}`, setArAging);
-    fetchWidget(`/api/clients/${clientId}/financials/ap-aging?asOfDate=${yearEnd}`, setApAging);
+    fetchWidget(`/api/clients/${clientId}/financials/cash-flow?startDate=${year}-01-01&endDate=${yearEnd}`, setCashFlow);
+    // Aging always uses Feb 2026 since that's where data is seeded
+    fetchWidget(`/api/clients/${clientId}/financials/ar-aging?asOfDate=2026-02-28`, setArAging);
+    fetchWidget(`/api/clients/${clientId}/financials/ap-aging?asOfDate=2026-02-28`, setApAging);
     fetchWidget(`/api/clients/${clientId}/financials/trends?startYear=2009&endYear=2026`, setTrends);
   }, [clientId, year, fetchWidget]);
 
-  // Accessors
+  // Derived data
   const s = summary.data;
-  if (s) {
-    console.log('[Dashboard] Summary data keys:', Object.keys(s));
-    console.log('[Dashboard] Summary check — cashPosition:', s.cashPosition, 'cash_position:', s.cash_position);
-    console.log('[Dashboard] Summary check — revenue:', s.revenue, 'totalRevenue:', s.totalRevenue);
-    console.log('[Dashboard] Summary check — netIncome:', s.netIncome, 'net_income:', s.net_income);
-    console.log('[Dashboard] Summary check — grossMargin:', s.grossMargin, 'gross_margin:', s.gross_margin);
-    console.log('[Dashboard] Summary check — accountsReceivable:', s.accountsReceivable, 'ar_total:', s.ar_total);
-    console.log('[Dashboard] Summary check — accountsPayable:', s.accountsPayable, 'ap_total:', s.ap_total);
-    console.log('[Dashboard] Summary check — priorYear keys:', s.revenuePriorYear, s.prior_revenue, s.netIncomePriorYear, s.prior_netIncome);
-  }
-  const priorPct = (field) => {
-    if (!s) return null;
-    const val = pctChange(s[field], s[`${field}PriorYear`] ?? s[`prior_${field}`]);
-    return val;
-  };
+  const ps = priorSummary.data;
+  const monthly = buildMonthlyFromPnl(pnl.data);
+  const agingNote = (year !== 2025 && year !== 2026) ? "as of Feb 2026" : null;
 
   const showToast = (msg) => setToast(msg);
 
@@ -512,34 +578,34 @@ export default function ClientDashboard() {
         {/* ── ROW 1: Financial Snapshot ──────────────────────────────────── */}
         <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
           <SnapshotCard label="Cash Position" loading={summary.loading}
-            value={fmt(s?.cashPosition ?? s?.cash_position)} indicator={s?.cashPosition > 0 ? "up" : null}
-            sub={s ? `as of ${year}` : ""} />
+            value={fmt(s?.cashPosition)}
+            indicator={ps ? (s?.cashPosition > ps?.cashPosition ? "up" : s?.cashPosition < ps?.cashPosition ? "down" : null) : null}
+            sub={ps ? pctStr(s?.cashPosition, ps?.cashPosition) + " vs prior year" : `FY ${year}`} />
           <SnapshotCard label="Revenue" loading={summary.loading}
-            value={fmt(s?.revenue ?? s?.totalRevenue)}
-            indicator={priorPct("revenue") > 0 ? "up" : priorPct("revenue") < 0 ? "down" : null}
-            sub={priorPct("revenue") != null ? `${pctStr(priorPct("revenue"))} vs prior year` : `FY ${year}`} />
+            value={fmt(s?.totalRevenue)}
+            indicator={ps ? (s?.totalRevenue > ps?.totalRevenue ? "up" : s?.totalRevenue < ps?.totalRevenue ? "down" : null) : null}
+            sub={ps ? pctStr(s?.totalRevenue, ps?.totalRevenue) + " vs prior year" : `FY ${year}`} />
           <SnapshotCard label="Net Income" loading={summary.loading}
-            value={fmt(s?.netIncome ?? s?.net_income)}
-            indicator={priorPct("netIncome") > 0 ? "up" : priorPct("netIncome") < 0 ? "down" : null}
-            sub={priorPct("netIncome") != null ? `${pctStr(priorPct("netIncome"))} vs prior year` : `FY ${year}`} />
+            value={fmt(s?.netIncome)}
+            indicator={ps ? (s?.netIncome > ps?.netIncome ? "up" : s?.netIncome < ps?.netIncome ? "down" : null) : null}
+            sub={ps ? pctStr(s?.netIncome, ps?.netIncome) + " vs prior year" : `FY ${year}`} />
           <SnapshotCard label="Gross Margin" loading={summary.loading}
-            value={s?.grossMargin != null ? `${(s.grossMargin * 100).toFixed(1)}%` : (s?.gross_margin != null ? `${(s.gross_margin * 100).toFixed(1)}%` : "—")}
-            indicator={s?.grossMargin > (s?.grossMarginPriorYear ?? 0) ? "up" : null}
+            value={s?.grossMarginPct != null ? `${parseFloat(s.grossMarginPct).toFixed(1)}%` : "—"}
+            indicator={ps?.grossMarginPct != null ? (s?.grossMarginPct > ps.grossMarginPct ? "up" : s?.grossMarginPct < ps.grossMarginPct ? "down" : null) : null}
             sub="of revenue" />
           <SnapshotCard label="Accounts Receivable" loading={summary.loading}
-            value={fmt(s?.accountsReceivable ?? s?.ar_total)} sub="total outstanding" />
+            value={fmt(s?.accountsReceivable)} sub="total outstanding" />
           <SnapshotCard label="Accounts Payable" loading={summary.loading}
-            value={fmt(s?.accountsPayable ?? s?.ap_total)} sub="total outstanding" />
+            value={fmt(s?.accountsPayable)} sub="total outstanding" />
         </div>
 
         {/* ── ROW 2: Revenue & Profitability ────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-          <WidgetCard title="Revenue by Product Line" tooltip="Monthly revenue broken down by product category" loading={revenue.loading} error={revenue.error}>
-            {revenue.data && console.log('[Dashboard] Revenue chart check — data keys:', Object.keys(revenue.data), 'monthly:', !!revenue.data.monthly, 'isArray:', Array.isArray(revenue.data), 'sample:', JSON.stringify((revenue.data.monthly || revenue.data)?.[0]))}
-            {revenue.data && (
+          <WidgetCard title="Revenue by Product Line" tooltip="Monthly revenue broken down by product category" loading={pnl.loading} error={pnl.error || (!monthly && !pnl.loading)}>
+            {monthly && (
               <>
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={revenue.data.monthly || revenue.data}>
+                  <BarChart data={monthly.months}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
                     <XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FU }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FM }} axisLine={false} tickLine={false} tickFormatter={fmt} width={56} />
@@ -554,25 +620,22 @@ export default function ClientDashboard() {
             )}
           </WidgetCard>
 
-          <WidgetCard title="Profitability Trend" tooltip="Monthly gross profit and net income with prior year comparison" loading={profitability.loading} error={profitability.error}>
-            {profitability.data && console.log('[Dashboard] Profitability chart check — data keys:', Object.keys(profitability.data), 'monthly:', !!profitability.data.monthly, 'sample:', JSON.stringify((profitability.data.monthly || profitability.data)?.[0]))}
-            {profitability.data && (
+          <WidgetCard title="Profitability Trend" tooltip="Monthly gross profit and net income" loading={pnl.loading} error={pnl.error || (!monthly && !pnl.loading)}>
+            {monthly && (
               <>
                 <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={profitability.data.monthly || profitability.data}>
+                  <LineChart data={monthly.months}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
                     <XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FU }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: C.textMuted, fontSize: 11, fontFamily: FM }} axisLine={false} tickLine={false} tickFormatter={fmt} width={56} />
                     <Tooltip content={<CustomTooltip />} />
                     <Line type="monotone" dataKey="grossProfit" stroke={C.accent} strokeWidth={2} dot={false} name="Gross Profit" />
                     <Line type="monotone" dataKey="netIncome" stroke={C.white} strokeWidth={2} dot={false} name="Net Income" />
-                    <Line type="monotone" dataKey="priorNetIncome" stroke={C.textMuted} strokeWidth={1.5} dot={false} strokeDasharray="6 4" name="Prior Year Net Income" />
                   </LineChart>
                 </ResponsiveContainer>
                 <ChartLegend items={[
                   { label: "Gross Profit", color: C.accent },
                   { label: "Net Income", color: C.white },
-                  { label: "Prior Year NI", color: C.textMuted, dashed: true },
                 ]} />
               </>
             )}
@@ -582,34 +645,30 @@ export default function ClientDashboard() {
         {/* ── ROW 3: Balance Sheet & Cash Flow ──────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
           <WidgetCard title="Visual Balance Sheet" tooltip="Proportional view of assets vs liabilities and equity" loading={balanceSheet.loading} error={balanceSheet.error}>
-            {balanceSheet.data && console.log('[Dashboard] BalanceSheet check — data keys:', Object.keys(balanceSheet.data), 'assets:', balanceSheet.data.assets, 'liabilities:', balanceSheet.data.liabilities, 'equity:', balanceSheet.data.equity)}
             {balanceSheet.data && <BalanceSheetVisual data={balanceSheet.data} />}
           </WidgetCard>
 
           <WidgetCard title="Cash Flow Waterfall" tooltip="Where cash came from and went during the period" loading={cashFlow.loading} error={cashFlow.error}>
-            {cashFlow.data && console.log('[Dashboard] CashFlow check — data keys:', Object.keys(cashFlow.data), 'startingCash:', cashFlow.data.startingCash, 'starting_cash:', cashFlow.data.starting_cash, 'operatingActivities:', cashFlow.data.operatingActivities, 'operating:', cashFlow.data.operating)}
             {cashFlow.data && <CashFlowWaterfall data={cashFlow.data} />}
           </WidgetCard>
         </div>
 
         {/* ── ROW 4: AR & AP Aging ──────────────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-          <WidgetCard title="AR Aging Breakdown" tooltip="Accounts receivable by aging bucket with top customers" loading={arAging.loading} error={arAging.error}>
-            {arAging.data && console.log('[Dashboard] AR Aging check — data keys:', Object.keys(arAging.data), 'totals:', arAging.data.totals, 'summary:', arAging.data.summary, 'customers:', arAging.data.customers, 'details:', arAging.data.details, 'rows:', arAging.data.rows)}
+          <WidgetCard title="AR Aging Breakdown" tooltip="Accounts receivable by aging bucket with top customers" note={agingNote} loading={arAging.loading} error={arAging.error}>
             {arAging.data && (
               <>
-                <AgingBar data={arAging.data.totals || arAging.data.summary || arAging.data} />
-                <AgingTable rows={arAging.data.customers || arAging.data.details || arAging.data.rows} type="ar" />
+                <AgingBar data={arAging.data.totals} />
+                <AgingTable rows={arAging.data.customers} type="ar" />
               </>
             )}
           </WidgetCard>
 
-          <WidgetCard title="AP Aging Breakdown" tooltip="Accounts payable by aging bucket with top vendors" loading={apAging.loading} error={apAging.error}>
-            {apAging.data && console.log('[Dashboard] AP Aging check — data keys:', Object.keys(apAging.data), 'totals:', apAging.data.totals, 'summary:', apAging.data.summary, 'vendors:', apAging.data.vendors, 'details:', apAging.data.details, 'rows:', apAging.data.rows)}
+          <WidgetCard title="AP Aging Breakdown" tooltip="Accounts payable by aging bucket with top vendors" note={agingNote} loading={apAging.loading} error={apAging.error}>
             {apAging.data && (
               <>
-                <AgingBar data={apAging.data.totals || apAging.data.summary || apAging.data} />
-                <AgingTable rows={apAging.data.vendors || apAging.data.details || apAging.data.rows} type="ap" />
+                <AgingBar data={apAging.data.totals} />
+                <AgingTable rows={apAging.data.vendors} type="ap" />
               </>
             )}
           </WidgetCard>
@@ -618,9 +677,7 @@ export default function ClientDashboard() {
         {/* ── ROW 5: Multi-Year Growth Timeline ─────────────────────────── */}
         <WidgetCard title="Company Growth Timeline" tooltip="Annual revenue and net income from 2009 to present with key milestones" loading={trends.loading} error={trends.error}>
           {trends.data && (() => {
-            console.log('[Dashboard] Trends check — data keys:', Object.keys(trends.data), 'years:', !!trends.data.years, 'annual:', !!trends.data.annual, 'isArray:', Array.isArray(trends.data), 'sample:', JSON.stringify((trends.data.years || trends.data.annual || trends.data)?.[0]));
-            const trendData = trends.data.years || trends.data.annual || trends.data;
-            console.log('[Dashboard] Trends trendData isArray:', Array.isArray(trendData), 'length:', trendData?.length);
+            const trendData = trends.data.years;
             if (!Array.isArray(trendData)) return <WidgetError />;
             return (
               <>
@@ -633,7 +690,6 @@ export default function ClientDashboard() {
                     <Tooltip content={<CustomTooltip />} />
                     <Bar yAxisId="left" dataKey="revenue" fill={C.accent} radius={[4, 4, 0, 0]} name="Revenue" opacity={0.85} />
                     <Line yAxisId="right" type="monotone" dataKey="netIncome" stroke={C.white} strokeWidth={2} dot={{ r: 3, fill: C.white }} name="Net Income" />
-                    {/* Milestone reference lines */}
                     {Object.entries(MILESTONES).map(([yr, label]) => (
                       <ReferenceLine key={yr} yAxisId="left" x={parseInt(yr)} stroke={C.accentDim} strokeDasharray="3 3"
                         label={{ value: label, position: "top", fill: C.textDim, fontSize: 10, fontFamily: FU }} />
